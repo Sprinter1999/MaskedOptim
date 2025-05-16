@@ -310,9 +310,6 @@ class BaseLocalUpdate:
 
         self.last_updated = 0
 
-        self.is_svd_loss = args.is_svd_loss
-        self.feddecorr = FedDecorrLoss()
-        self.decorr_coef = args.decorr_coef
 
     def train(self, net, net2=None):
         if net2 is None:
@@ -444,9 +441,7 @@ class BaseLocalUpdate:
         log_probs, features = net(images)
         loss = self.loss_func(log_probs, labels)
         
-        if self.is_svd_loss:
-            loss_feddecorr = self.feddecorr(features)
-            loss += loss_feddecorr * self.decorr_coef
+
 
         if net2 is None:
             return loss
@@ -661,7 +656,7 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
 
                 logits, feat = net(images) 
                 
-                logits = self.logit_clip(logits)   
+                # logits = self.logit_clip(logits)   
                 loss = self.loss_func1(logits, labels)
 
 
@@ -739,9 +734,6 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
                 loss = self.pencil_loss(
                                 logits, labels_update, labels, feat)
                 
-                if self.is_svd_loss:
-                    loss_feddecorr = self.feddecorr(feat)
-                    loss += loss_feddecorr * self.decorr_coef
 
 
                 loss.backward()

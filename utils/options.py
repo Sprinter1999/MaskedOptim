@@ -130,9 +130,7 @@ def args_parser():
     parser.add_argument('--feature_return',
                         action='store_true', help='feature extraction')
     
-    # whether to exploit representation regularization
-    parser.add_argument('--is_svd_loss', action='store_true',
-                        help='whether using representation regularization or not')
+
     
     
     # DECORR_COEF=0.05 by default
