@@ -484,7 +484,7 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
         
 
         self.user_idx = user_idx
-        self.update_name = 'MaskedOptim'
+        self.update_name = 'maskedOptim'
 
 
 

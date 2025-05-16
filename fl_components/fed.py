@@ -57,7 +57,7 @@ class LocalModelWeights:
             w_glob = FedExp(
                 self.w_locals, self.data_size_locals, self.global_w_init,copy.deepcopy(self.model_))
         
-        elif self.method == 'RFA' or self.method == 'MaskedOptim':
+        elif self.method == 'RFA' or self.method == 'maskedOptim':
             w_glob = RFA(self.w_locals)
         
     

@@ -9,7 +9,7 @@ Paper will be released soon.
 - Median
 - Krum
 - RFA
-- MaskedOptim (the proposed method)
+- maskedOptim (the proposed method)
 
 To evaluate these methods, you can modify the method configuration in  `eval.sh`.
 
