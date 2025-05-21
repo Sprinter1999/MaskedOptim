@@ -13,5 +13,9 @@ Paper will be released soon.
 To evaluate these methods, you can modify the method configuration in  `eval.sh`.
 
 ## Datasets
+<<<<<<< Updated upstream
 Vision: CIFAR-10/100, CIFAR-N-10/100
 Language: AGNews
+=======
+CIFAR-10, CIFAR-N-10, AGNews
+>>>>>>> Stashed changes

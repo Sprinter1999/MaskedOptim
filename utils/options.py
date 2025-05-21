@@ -5,7 +5,10 @@ def args_parser():
     parser = argparse.ArgumentParser()
     # label noise method
     parser.add_argument('--method', type=str, default='fedavg',
-                        choices=['fedavg', 'krum', 'median', 'trimmedMean','RFA','maskedOptim'],
+                        choices=['fedavg', 'fedprox', 'fedexp', 'fedprox', 
+                                 'krum', 'median', 'trimmedMean','RFA','clipping',
+                                 'selfie', 'jointoptim', 'symmetricce', 'coteaching', 'coteaching+', 'dividemix', 
+                                 'fedrn', 'fedlsr', 'robustfl','fednoro','fedELC','maskedOptim'],
                         help='method name')
 
 
@@ -57,7 +60,7 @@ def args_parser():
 
     # other arguments
     parser.add_argument('--dataset', type=str, default='cifar10', help="name of dataset",
-                        choices=['cifar10', 'cifar100', 'AGNews'])
+                        choices=['cifar10', 'AGNews'])
     
     parser.add_argument('--iid', action='store_true',
                         help='whether i.i.d or not')
@@ -130,7 +133,9 @@ def args_parser():
     parser.add_argument('--feature_return',
                         action='store_true', help='feature extraction')
     
-
+    # whether to exploit representation regularization
+    parser.add_argument('--is_svd_loss', action='store_true',
+                        help='whether using representation regularization or not')
     
     
     # DECORR_COEF=0.05 by default
@@ -146,7 +151,7 @@ def args_parser():
                         help='lamda for pencil loss')
     parser.add_argument('--alpha_pencil', type=float, default=0.5,
                         help='alpha for pencil loss')
-    parser.add_argument('--beta_pencil', type=float, default=0.2,
+    parser.add_argument('--beta_pencil', type=float, default=0.1,
                         help='beta for pencil loss')
 
     # hyperparameters for Masked Optim
@@ -154,7 +159,7 @@ def args_parser():
                         help='tao for Masked Optim')
 
     # epoch_of_stage1
-    parser.add_argument('--epoch_of_stage1', type=int, default=20,
+    parser.add_argument('--epoch_of_stage1', type=int, default=30,
                         help='number of epochs for stage 1')
 
 

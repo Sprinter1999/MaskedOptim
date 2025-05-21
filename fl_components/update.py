@@ -607,11 +607,23 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
         pred_labels = torch.argmax(pred, dim=1)
         mask = (pred_labels == labels).float()
 
+        # 计算每个样本的交叉熵损失
+        ce_loss = F.cross_entropy(outputs, labels, reduction='none')
+        # 选择前80%损失较小的样本
+        k = int(0.8 * len(ce_loss))
+        _, indices = torch.topk(ce_loss, k, largest=False)
+        ce_mask = torch.zeros_like(ce_loss)
+        ce_mask[indices] = 1.0
+
         # Keep partial predictions for compatibility
-        Lo = -torch.mean(F.log_softmax(labels_update, dim=1)[torch.arange(labels_update.shape[0]),labels] * mask)
-
+        # Lo = -torch.mean(F.log_softmax(labels_update, dim=1)[torch.arange(labels_update.shape[0]),labels] * mask)
+        # Lo = -torch.mean(F.log_softmax(labels_update, dim=1)[torch.arange(labels_update.shape[0]),labels])
+        Lo = -torch.mean(F.log_softmax(labels_update, dim=1)[torch.arange(labels_update.shape[0]),labels] * ce_mask)
+        
         Le = -torch.mean(torch.sum(F.log_softmax(outputs, dim=1) * pred, dim=1))
+        # Le = -torch.mean(torch.sum(F.log_softmax(outputs, dim=1) * pred, dim=1) * ce_mask)
 
+        # Lc = -torch.mean(torch.sum(F.log_softmax(labels_update, dim=1) * pred, dim=1) * ce_mask) - Le
         Lc = -torch.mean(torch.sum(F.log_softmax(labels_update, dim=1) * pred, dim=1)) - Le
         
         loss_total = Lc/self.args.num_classes + self.args.alpha_pencil* Lo + self.args.beta_pencil* Le/self.args.num_classes 
@@ -681,6 +693,9 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
 
     #TODO: for noisy clients in the second phase
     def train_stage2(self, net, global_net, weight_kd):
+        # 保存初始模型参数
+        initial_state_dict = copy.deepcopy(net.state_dict())
+        
         net.train()
 
         optimizer = torch.optim.SGD(
@@ -692,16 +707,12 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
 
         epoch_loss = []
 
-
-
-
         #TODO: To begin the local training
         for epoch in range(self.args.local_ep):
             self.epoch = epoch
             batch_loss = []
 
             labels_grad = torch.zeros(self.local_datasize, self.args.num_classes, dtype=torch.float32)
-
 
             for batch_idx, batch in enumerate(self.ldr_train):
                 self.batch_idx = batch_idx
@@ -716,14 +727,13 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
                 else:
                     images, labels = batch
 
-
                 images = images.to(self.args.device)
                 labels = labels.to(self.args.device)
 
                 with autocast():
                     logits, feat = net(images)
 
-                logits = self.logit_clip(logits)
+                # logits = self.logit_clip(logits)
                 
                 indexss = self.indexMapping(ids)
 
@@ -734,10 +744,7 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
                 loss = self.pencil_loss(
                                 logits, labels_update, labels, feat)
                 
-
-
                 loss.backward()
-
 
                 labels_grad[indexss] = labels_update.grad.cpu().detach() #.numpy()
 
@@ -746,15 +753,10 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
 
                 optimizer.step()
 
-
                 batch_loss.append(loss.item())
             
-
             self.label_updating(labels_grad)
-
-
             
-
             epoch_loss.append(sum(batch_loss) / len(batch_loss))
             self.total_epochs += 1
         
@@ -762,12 +764,9 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
         self.net1.load_state_dict(net.state_dict())
         self.last_updated = self.args.g_epoch
 
-
-
         #TODO: traverse dataset
         after_correct_predictions = 0
         for batch_idx, batch in enumerate(self.ldr_train_infer):
-
             if self.idx_return:
                 images, labels, _ = batch
             elif self.real_idx_return:
@@ -779,7 +778,6 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
             labels = labels.to(self.args.device)
             local_index = self.indexMapping(ids)
 
-            # with autocast():
             with torch.no_grad():
                 output_final, teacher_feat = net(images)
                 output_final = output_final.to('cpu')
@@ -787,13 +785,8 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
                 soft_label = torch.softmax(output_final, dim=1) 
                 self.final_prediction_labels[local_index]  = soft_label
 
-        
         net.to('cpu')
         del net
-
-
-
-
 
         #TODO: merge the softmax(self.label_update) and the prediction after local training(self.final_prediction_labels)
         self.label_update = self.label_update.to('cpu')
@@ -805,14 +798,18 @@ class LocalUpdateMaskedOptim(BaseLocalUpdate):
         # the GT labels is self.true_labels_local
         predicted_classes = torch.argmax(merged_local_labels, dim=1)
 
-
-
         # replace the label_update with the merged_local_labels, and rescale by K_pencil
         self.label_update = merged_local_labels * self.args.K_pencil
 
-
-
+        # EMA
+        final_state_dict = self.net1.state_dict()
+        ema_state_dict = {}
+        for key in final_state_dict.keys():
+            initial_param = initial_state_dict[key].to('cpu')
+            final_param = final_state_dict[key].to('cpu')
+            ema_state_dict[key] = 0.2 * initial_param + 0.8 * final_param
         
-        # del net
+
+        self.net1.load_state_dict(ema_state_dict)
 
         return self.net1.state_dict(), sum(epoch_loss) / len(epoch_loss)
