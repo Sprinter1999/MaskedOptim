@@ -8,7 +8,6 @@ Paper will be released soon.
 - TrimmedMean
 - Median
 - Krum
-- RFA
 - maskedOptim (the proposed method)
 
 To evaluate these methods, you can modify the method configuration in  `eval.sh`.
