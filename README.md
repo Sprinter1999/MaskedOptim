@@ -1,7 +1,7 @@
 # Masked Optimization
 
-Implementation for our manuscript Robust Federated Learning with Masked Optimization against Distributed Noisy Clients, which is currently under review.
-The arxiv version will be released soon.
+Implementation for our manuscript `Robust Federated Learning against Noisy Clients via Masked Optimization`, which is currently under review for journal.
+The arxiv version is available via [this link](https://arxiv.org/abs/2506.02079).
 
 ## Supported Methods in this code base
 - FedAvg
